@@ -35,14 +35,37 @@ const getAllTours = async (req, res) => {
     // queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
     // // console.log(JSON.parse(queryStr));
 
-    // 3) sorting
+    // // 3) sorting
     let query = Tour.find(JSON.parse(queryStr));
     if (req.query.sort) {
       let sortBy = req.query.sort.split(",").join(" ");
-      console.log(sortBy);
       query = query.sort(sortBy);
     } else {
       query = query.sort("-createdAt");
+    }
+
+    // 3) field limiting
+    /// console.log(req.query.fields);
+    if (req.query.fields) {
+      const field = req.query.fields.split(",").join(" ");
+      // console.log(field);
+      query = query.select(field);
+    } else {
+      query = query.select("-__v"); // - is excluding;
+    }
+
+    // 4) Pagination
+    const page = req.query.page * 1 || 1;
+    const limit = req.query.limit * 1 || 5;
+    const skip = (page - 1) * limit;
+
+    // page=2&limit=10
+    // query = query.skip(1).limit(2);
+    query = query.skip(skip).limit(limit);
+
+    if (req.query.page) {
+      const numTours = await Tour.countDocuments();
+      if (skip >= numTours) throw new Error("This page doesnot exists");
     }
 
     // for display -----> execute section
@@ -55,7 +78,7 @@ const getAllTours = async (req, res) => {
   } catch (err) {
     res.status(404).json({
       status: "Fail",
-      message: "Couldnot find the tours",
+      message: err,
     });
   }
 };
