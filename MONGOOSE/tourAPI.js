@@ -7,7 +7,6 @@ app.use(express.json());
 
 app.get("/", async (req, res) => {
   let data = await tourSchema.find();
-  //   console.log(data);
   res.send(data);
 });
 
